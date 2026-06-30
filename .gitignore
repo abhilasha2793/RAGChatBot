@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+
+# Android
+android-app/.gradle/
+android-app/local.properties
+android-app/.idea/
+android-app/build/
+android-app/**/build/
+
+# Logs
+*.log
