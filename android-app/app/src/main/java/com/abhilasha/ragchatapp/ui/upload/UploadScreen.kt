@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -73,7 +76,7 @@ fun UploadScreen(
     var fileName by remember {
         mutableStateOf("")
     }
-
+    val documentStatus by viewModel.documentStatus.collectAsState()
     val launcher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.OpenDocument()
@@ -96,18 +99,12 @@ fun UploadScreen(
 
         uploadResponse?.let {
 
-            scope.launch {
+            snackbarHostState.showSnackbar("PDF uploaded")
 
-                snackbarHostState.showSnackbar(
-                    "PDF uploaded successfully"
-                )
+            viewModel.pollDocumentStatus(it.stored_filename)
 
-            }
-
-            navController.navigate(Routes.CHAT)
-
+            viewModel.clearUploadResponse()
         }
-
     }
 
     LaunchedEffect(error) {
@@ -158,7 +155,7 @@ fun UploadScreen(
         ) {
 
             Text(
-                text = "Upload PDF",
+                text = "Documents",
                 style = MaterialTheme.typography.headlineMedium
             )
 
@@ -201,43 +198,74 @@ fun UploadScreen(
             )
 
             Spacer(modifier = Modifier.height(30.dp))
-
             Button(
-
                 enabled = !loading && selectedUri != null,
-
                 modifier = Modifier.fillMaxWidth(),
-
                 onClick = {
-
                     selectedUri?.let {
-
                         uploadPdf(
                             context = context,
                             uri = it,
                             viewModel = viewModel
                         )
-
                     }
-
                 }
-
             ) {
-
                 Text("Upload")
-
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            if (loading) {
+            documentStatus?.let { status ->
 
-                CircularProgressIndicator()
+                Text(
+                    text = "Status : ${status.status}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when (status.status.uppercase()) {
+
+                    "UPLOADING", "PROCESSING" -> {
+
+                        CircularProgressIndicator()
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text("Processing PDF...")
+                    }
+
+                    "READY" -> {
+
+                        Text(
+                            text = "✅ PDF Ready",
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                navController.navigate(Routes.CHAT)
+                            }
+                        ) {
+                            Text("Start Chat")
+                        }
+                    }
+
+                    "FAILED" -> {
+
+                        Text(
+                            text = "❌ Processing Failed",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
 
         }
-
     }
 
 }
